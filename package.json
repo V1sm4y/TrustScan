@@ -1,0 +1,9 @@
+{
+  "name": "url-risk-checker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simple URL risk checker based on HTTPS and domain age.",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

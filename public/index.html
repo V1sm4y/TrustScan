@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>URL Risk Checker</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="card">
+        <p class="eyebrow">Simple URL Check</p>
+        <h1>Input a URL. Get a rough risk label.</h1>
+        <form id="risk-form" class="form">
+          <label for="url-input" class="label">URL</label>
+          <div class="row">
+            <input id="url-input" name="url" type="text" placeholder="https://example.com" autocomplete="off" required />
+            <button type="submit">Check</button>
+          </div>
+        </form>
+
+        <section id="result" class="result hidden" aria-live="polite">
+          <p class="risk-line">Result: <strong id="risk-value"></strong></p>
+          <p id="detail-line" class="detail"></p>
+          <p id="warning-line" class="warning hidden"></p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("risk-form");
+      const result = document.getElementById("result");
+      const riskValue = document.getElementById("risk-value");
+      const detailLine = document.getElementById("detail-line");
+      const warningLine = document.getElementById("warning-line");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(form);
+        const url = formData.get("url");
+
+        riskValue.textContent = "Checking...";
+        detailLine.textContent = "";
+        warningLine.textContent = "";
+        warningLine.classList.add("hidden");
+        result.classList.remove("hidden");
+
+        try {
+          const response = await fetch("/api/analyze", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.error || "Unable to analyze URL.");
+          }
+
+          const httpsLabel = data.isHttps ? "HTTPS" : "Not HTTPS";
+          const ageLabel = data.domainAgeDays == null ? "unknown age" : `${data.domainAgeDays} days old`;
+
+          riskValue.textContent = data.risk;
+          detailLine.textContent = `${httpsLabel} | ${data.domain} | ${ageLabel}`;
+
+          if (data.domainAgeError) {
+            warningLine.textContent = `Domain age lookup issue: ${data.domainAgeError}`;
+            warningLine.classList.remove("hidden");
+          }
+        } catch (error) {
+          riskValue.textContent = "Error";
+          detailLine.textContent = error.message;
+        }
+      });
+    </script>
+  </body>
+</html>
